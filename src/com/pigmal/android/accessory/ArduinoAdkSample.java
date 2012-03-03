@@ -124,7 +124,6 @@ public class ArduinoAdkSample extends OpenAccessoryBaseActivity {
 		super.onDestroy();
 	}
 	
-	
 	private int composeInt(byte hi, byte lo) {
 		return ((hi & 0xff) << 8) + (lo & 0xff);
 	}

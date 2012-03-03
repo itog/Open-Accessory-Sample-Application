@@ -18,13 +18,18 @@ public class ArduinoAccessory {
 	
 	/**
 	 * アクセサリとの通信プロトコル
-	 * [cmd][id][data][data]...
+	 * [startbyte][cmd][size][data...]
 	 */
+	static final byte START_BYTE = 0x7f;
 	static final byte CMD_DIGITAL_WRITE = 0x00;
 	static final byte CMD_ANALOG_WRITE = 0x01;
 	static final byte CMD_SERVO_WRITE = 0x02;
 	static final byte UPDATE_DIGITAL_STATE = 0x40;
 	static final byte UPDATE_ANALOG_STATE = 0x41;
+	
+	static final int HEADER_SIZE = 3;
+	static final int DIGITA_WRITE_DATA_SIZE = 2;
+	static final int ANALOG_WRITE_DATA_SIZE = 2;
 	
 	static final int MAX_BUF_SIZE = 1024;
 	
@@ -54,13 +59,15 @@ public class ArduinoAccessory {
 	 * @param value
 	 */
 	void digitalWrite(int id, boolean value) {
-		byte[] buffer = new byte[3];
-		buffer[0] = CMD_DIGITAL_WRITE;
-		buffer[1] = (byte)id;
+		byte[] buffer = new byte[HEADER_SIZE + DIGITA_WRITE_DATA_SIZE];
+		buffer[0] = START_BYTE;
+		buffer[1] = CMD_DIGITAL_WRITE;
+		buffer[2] = DIGITA_WRITE_DATA_SIZE;
+		buffer[3] = (byte)id;
 		if(value) {
-			buffer[2]=(byte)1;
+			buffer[4]=(byte)1;
 		} else {
-			buffer[2]=(byte)0;
+			buffer[4]=(byte)0;
 		}
 		/**
 		 * アクセサリに出力する
@@ -75,10 +82,12 @@ public class ArduinoAccessory {
 	}
 	
 	void analogWrite(int id, int progress) {
-		byte[] buffer = new byte[3];
-		buffer[0] = CMD_ANALOG_WRITE;
-		buffer[1] = (byte)id;
-		buffer[2] = (byte) progress;
+		byte[] buffer = new byte[HEADER_SIZE + ANALOG_WRITE_DATA_SIZE];
+		buffer[0] = START_BYTE;
+		buffer[1] = CMD_ANALOG_WRITE;
+		buffer[2] = ANALOG_WRITE_DATA_SIZE;
+		buffer[3] = (byte)id;
+		buffer[4] = (byte) progress;
 		/**
 		 * アクセサリに出力する
 		 */
@@ -104,27 +113,30 @@ public class ArduinoAccessory {
 			return;
 		}
 		
-		while (i < length) {
+		while (i < length && data[i] == START_BYTE) {
 			int rest = length - i;
-			Log.v(TAG, "receive:[" + data[0] +"][" + data[1] + "][" + data[2]);			
-					
-			switch (data[i]) {
+			Log.v(TAG, "receive:[" + data[1] +"][" + data[2] + "]");			
+			
+			int size = 0;
+			switch (data[i + 1]) {
 			case UPDATE_DIGITAL_STATE:
-				if (rest >= 3) {
-					byte[] d = new byte[2];
-					System.arraycopy(data, i + 1, d, 0, d.length);
+				size = data[i + 2];
+				if (rest >= size + HEADER_SIZE) {
+					byte[] d = new byte[size];
+					System.arraycopy(data, i + HEADER_SIZE, d, 0, size);
 					Message m = Message.obtain(mHandler, UPDATE_DIGITAL_STATE, d);
 					mHandler.sendMessage(m);
-					i += 3;
+					i += size;
 					break;
 				}
 			case UPDATE_ANALOG_STATE:
-				if (rest >= 4) {
-					byte[] d = new byte[3];
-					System.arraycopy(data, i + 1, d, 0, d.length);
+				size = data[i + 2];
+				if (rest >= size + HEADER_SIZE) {
+					byte[] d = new byte[size];
+					System.arraycopy(data, i + HEADER_SIZE, d, 0, size);
 					Message m = Message.obtain(mHandler, UPDATE_ANALOG_STATE, d);
 					mHandler.sendMessage(m);
-					i += 4;
+					i += size;
 					break;
 				}
 			default:
