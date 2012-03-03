@@ -12,8 +12,8 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
-public class ArduinoAdkSample extends OpenAccessoryBaseActivity {
-	private static final String TAG = "HelloArduinoADK";
+public class ArduinoAccessorySample extends OpenAccessoryBaseActivity {
+	private static final String TAG = "OpenAccessoryBaseActivity";
 	
 	private ToggleButton[] mButtons;
 	private SeekBar[] mSeekBars;
@@ -24,7 +24,7 @@ public class ArduinoAdkSample extends OpenAccessoryBaseActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
  
-		setContentView(R.layout.arduino_adk_base);
+		setContentView(R.layout.main);
 		/**
 		 * ディジタル出力
 		 */
@@ -121,6 +121,9 @@ public class ArduinoAdkSample extends OpenAccessoryBaseActivity {
 	private OnCheckedChangeListener checkedListener = new OnCheckedChangeListener() {
 		@Override
 		public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+			if (mArduinoAccessory == null) {
+				return ;
+			}
 			switch (buttonView.getId()) {
 			case R.id.digitalOut1:
 				mArduinoAccessory.digitalWrite(0, isChecked);
@@ -143,6 +146,10 @@ public class ArduinoAdkSample extends OpenAccessoryBaseActivity {
 	private OnSeekBarChangeListener seekBarListener = new OnSeekBarChangeListener() {
 		@Override
 		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+			if (mArduinoAccessory == null) {
+				return ;
+			}
+			
 			switch (seekBar.getId()) {
 			case R.id.analogOut1:
 				mArduinoAccessory.analogWrite(0, progress);
